@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../css/img/logo2.png">
+    <link rel="stylesheet" href="../css/body.css">
+    <link rel="stylesheet" href="../css/root.css">
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/maquina.css">
+    <link rel="stylesheet" href="../css/cabecalho_dash.css">
+    <link rel="icon" href="../css/img/icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/funcoes.js"></script>
+
+    <title>Detalhes do totem</title>
+</head>
+
+<body onload="validarSessao(), mostrarInfos(), obterDadosGrafico(maquina)">
+
+    <!-- Início cabeçalho -->
+
+    <div class="cabecalho">
+        <div class="container_cabecalho">
+            <div class="itens_cabecalho">
+                <img src="../css/img/logo branco.png" alt="Logo do Site" class="logo_cabecalho">
+                <p class="texto" id="nome"></p>
+                <img src="../css/img/analista.png" alt="" id="foto_dash">
+                <!-- <a href="index.html"><img src="css/img/saida.png" alt="" id="exit"></a> -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Fim cabeçalho -->
+
+    <!-- --------------------------------------------------------------------------------------------------------- -->
+
+    <!-- Início especificações -->
+    <div id="dados">
+        <div id="especificacoes">
+            <div id="pc">
+                
+            </div>
+            <div id="informacoes">
+                <p class="info">Informações:</p>
+                <div class="info1">
+                    <b>id: </b><span class="dado" id="idMaquina"> </span>
+                </div>
+                <div>
+                    <b>CPU: </b> <span class="dado" id="divModeloCpu"> </span>
+                </div>
+                <div>
+                    <b>RAM: </b> <span class="dado" id="divRam"> </span>
+                </div>
+                <div class="info1">
+                    <b>Data da implantação: </b> <span class="dado" id="divData"> </span>
+                </div>
+                <div>
+                    <b>Linha: </b> <span class="dado" id="linha"> </span>
+                </div>
+                <div>
+                    <b>Estação: </b> <span class="dado" id="estacao"> </span>
+                </div>
+            </div>
+
+            <div id="legenda">
+                <div class="itens_legenda">
+                    <div class="kpi">
+                        <div class="alerta bom" onmouseover="mostrarBom()" onmouseleave="sumirDiv()"></div>
+                    </div>
+                    <div class="kpi">
+                        <div class="alerta atencao" id="atencao" onmouseover="mostrarAtencao()"
+                            onmouseleave="sumirDiv()"></div>
+                    </div>
+                    <div class="kpi">
+                        <div class="alerta ruim" id="ruim" onmouseover="mostrarRuim()" onmouseleave="sumirDiv()"></div>
+                    </div>
+                    <div class="kpi">
+                        <div class="alerta inativo" id="inativo" onmouseover="mostrarInativo()"
+                            onmouseleave="sumirDiv()"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="estados" style="display: none;">
+                <div id="p_estados">
+
+                </div>
+            </div>
+
+        </div>
+        <div id="graficos">
+            <div id="graficos_cima">
+                <!-- GRAFICO CPU -->
+                <div class="grafico" id="graficoCpu">
+                    <canvas id="myChart1"></canvas>
+                </div>
+                <!-- GRAFICO HD -->
+                <div class="grafico" id="graficoRam">
+                    <canvas id="myChart2"></canvas>
+                </div>
+            </div>
+
+            <div id="graficos_baixo">
+                <!-- GRAFICO RAM -->
+                <div class="grafico">
+                    <h1 class="titulo_processos">Processos:</h1>
+                    <h1 id="qtd_processos">0</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <!-- Fim especificações -->
+
+    <!-- --------------------------------------------------------------------------------------------------------- -->
+
+    <!-- Início legenda -->
+
+    <!-- <button id="btn_relatorio" onclick="btn_relatorio()">Abrir chamado</button>:? -->
+    <!-- <a href="help.html"> <img src="css/img/help.png" id="help"></img> </a>
+    <a href="dashboard.html"> <img src="css/img/casa.png" id="casa"></img> </a> -->
+
+    <!-- Fim legenda -->
+
+    <!-- --------------------------------------------------------------------------------------------------------- -->
+
+</body>
+
+</html>
+<script>
+    var grafico_linha2;
+    var grafico_linha3;
+    var maquina = localStorage.idMaquina;
+
+    function btn_relatorio() {
+        window.open('chamado.html')
+    }
+
+    function obterDadosGrafico(idAquario) {
+        // if (proximaAtualizacao != undefined) {
+        //     clearTimeout(proximaAtualizacao);
+        // }
+        fetch(`/medidas/ultimas/${idAquario}`, { cache: 'no-store' }).then(function (response) {
+            if (response.ok) {
+                response.json().then(function (resposta) {
+                    // console.log(`Dados recebidos: ${JSON.stringify(resposta)}`);
+                    resposta.reverse();
+                    mostrarEspecificacao(idAquario)
+                    plotarGrafico(resposta, idAquario);
+                    plotarGrafico2(resposta, idAquario);
+                });
+            } else {
+                console.error('Nenhum dado encontrado ou erro na API');
+            }
+        })
+            .catch(function (error) {
+                console.error(`Erro na obtenção dos dados p/ gráfico: ${error.message}`);
+            });
+    }
+
+    function mostrarEspecificacao(idMaquina) {
+        fetch(`/dash/listar/${idMaquina}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }).then(function (response) {
+            if (response.ok) {
+                response.json().then(function (resposta) {
+                    // console.log(`Dados recebidos: ${JSON.stringify(resposta)}`);
+                    var memoriaRam = resposta[0].totalMemoria
+                    var modeloCpu = resposta[0].modeloCPU
+                    var dataCadastro = resposta[0].dataCadastro
+                    mostrarInfos(memoriaRam, modeloCpu, dataCadastro)
+                });
+            } else {
+                console.log("Houve um erro ao tentar realizar o listar!");
+                resposta.text().then(texto => {
+                    console.error(texto);
+                });
+            }
+
+        }).catch(function (erro) {
+            console.log(erro);
+        })
+
+        return false;
+    }
+
+    function mostrarInfos(memoriaRam, modeloCpu, dataCadastro) {
+        idMaquina.innerHTML = localStorage.idMaquina;
+        divModeloCpu.innerHTML = `${modeloCpu}`;
+        divRam.innerHTML = `${memoriaRam}`;
+        divData.innerHTML = `${dataCadastro}`;
+        linha.innerHTML = sessionStorage.COR_LINHA;
+        estacao.innerHTML = sessionStorage.NOME_ESTACAO;
+    }
+
+    function plotarGrafico(resposta, idCaminhao) {
+        // console.log('iniciando plotagem do gráfico...');
+
+        var dados = {
+            labels: [],
+            datasets: [
+                {
+                    // joga as temperaturas
+                    yAxisID: 'y-temperatura',
+                    label: 'Uso CPU',
+                    borderColor: '#FFF',
+                    backgroundColor: '#32b9cd8f',
+                    fill: true,
+                    // dados da temperatura
+                    data: []
+                }
+            ]
+        };
+
+        for (i = 0; i < resposta.length; i++) {
+            var registro = resposta[i];
+            let horario = (registro.upTime).toString();
+            let horarioModificado = horario.slice(11, 19);
+            console.log(horarioModificado)
+            // verificar se esta referenciado
+            // console.log(registro)
+            dados.labels.push(horarioModificado);
+            dados.datasets[0].data.push(registro.usoCPU);
+            qtd_processos.innerHTML= registro.processos;
+
+            if (registro.usoCPU < 50 && registro.usoMemoria < 50) {
+                pc.innerHTML = `<img class="estado" src="../css/img/computador_bom.png" alt="Imagem computador">`
+            } else if (registro.usoCPU >= 50 && registro.usoCPU < 70 ||registro.usoMemoria >= 50 && registro.usoMemoria < 70 ) {
+                pc.innerHTML = `<img class="estado" src="../css/img/computador_alerta.png" alt="Imagem computador">`
+            }else if (registro.usoCPU > 70 || registro.usoMemoria < 70) {
+                pc.innerHTML = `<img class="estado" src="../css/img/computador_critico.png" alt="Imagem computador">`
+            }else{
+                pc.innerHTML = `<img class="estado" src="../css/img/computador_inativo.png" alt="Imagem computador">`
+            }
+        }
+
+        // console.log(JSON.stringify(dados));
+
+        //  verificar nome ctx
+        var ctx = document.querySelector("#myChart1");
+        grafico_linha2 = new Chart(ctx, {
+            type: 'line',
+            data: dados,
+            options: {
+                responsive: true,
+                animation: { duration: 500 },
+                hoverMode: 'index',
+                stacked: false,
+                title: {
+                    display: false,
+                    text: 'Dados capturados'
+                },
+                // scales: {
+                //     yAxes: [{
+                //         type: 'linear',
+                //         display: true,
+                //         position: 'left',
+                //         ticks: {
+                //             beginAtZero: true,
+                //             max: 25,
+                //             min: -25
+                //         }
+                //     }],
+                // }
+            }
+        });
+
+        setTimeout(() => atualizarGrafico(idCaminhao, dados), 2000);
+    }
+
+    function plotarGrafico2(resposta, idCaminhao) {
+        // console.log('iniciando plotagem do gráfico...');
+
+        var dados = {
+            labels: [],
+            datasets: [
+                {
+                    // joga as temperaturas
+                    yAxisID: 'y-temperatura',
+                    label: 'Uso Ram',
+                    borderColor: '#FFF',
+                    backgroundColor: '#32b9cd8f',
+                    fill: true,
+                    // dados da temperatura
+                    data: []
+                }
+            ]
+        };
+
+        for (i = 0; i < resposta.length; i++) {
+            var registro = resposta[i];
+            let horario = (registro.upTime).toString();
+            let horarioModificado = horario.slice(11, 19);
+            console.log(horarioModificado)
+            // verificar se esta referenciado
+            // console.log(registro)
+            dados.labels.push(horarioModificado);
+            dados.datasets[0].data.push(registro.usoMemoria);
+        }
+
+        // console.log(JSON.stringify(dados));
+
+        //  verificar nome ctx
+        var ctx = document.querySelector("#myChart2");
+        grafico_linha3 = new Chart(ctx, {
+            type: 'line',
+            data: dados,
+            options: {
+                responsive: true,
+                animation: { duration: 500 },
+                hoverMode: 'index',
+                stacked: false,
+                title: {
+                    display: false,
+                    text: 'Dados capturados'
+                },
+                // scales: {
+                //     yAxes: [{
+                //         type: 'linear',
+                //         display: true,
+                //         position: 'left',
+                //         ticks: {
+                //             beginAtZero: true,
+                //             max: 25,
+                //             min: -25
+                //         }
+                //     }],
+                // }
+            }
+        });
+
+        setTimeout(() => atualizarGrafico2(idCaminhao, dados), 2000);
+    }
+
+
+    function atualizarGrafico(idCaminhao, dados) {
+
+        fetch(`/medidas/tempo-real/${idCaminhao}`, { cache: 'no-store' }).then(function (response) {
+        if (response.ok) {
+            response.json().then(function (novoRegistro) {
+
+                // console.log(`Dados recebidos: ${JSON.stringify(novoRegistro)}`);
+                // console.log(`Dados atuais do gráfico: ${dados}`);
+
+                // tirando e colocando valores no gráfico
+                dados.labels.shift(); // apagar o primeiro
+                dados.labels.push(novoRegistro[0].momento_grafico); // incluir um novo momento
+
+                dados.datasets[0].data.shift();  // apagar o primeiro de temperatura
+                dados.datasets[0].data.push(novoRegistro[0].usoCpu); // incluir uma nova medida de temperatura
+
+                window.grafico_linha2.update();
+
+                // Altere aqui o valor em ms se quiser que o gráfico atualize mais rápido ou mais devagar
+                proximaAtualizacao = setTimeout(() => atualizarGrafico(idCaminhao, dados), 3000);
+            });
+        } else {
+            console.error('Nenhum dado encontrado ou erro na API');
+            // Altere aqui o valor em ms se quiser que o gráfico atualize mais rápido ou mais devagar
+            proximaAtualizacao = setTimeout(() => atualizarGrafico(idCaminhao, dados), 3000);
+        }
+    })
+        .catch(function (error) {
+            console.error(`Erro na obtenção dos dados p/ gráfico: ${error.message}`);
+        });
+
+    }
+    function atualizarGrafico2(idCaminhao, dados) {
+
+        fetch(`/medidas/tempo-real/${idCaminhao}`, { cache: 'no-store' }).then(function (response) {
+            if (response.ok) {
+                response.json().then(function (novoRegistro) {
+
+                    // console.log(`Dados recebidos: ${JSON.stringify(novoRegistro)}`);
+                    // console.log(`Dados atuais do gráfico: ${dados}`);
+
+                    // tirando e colocando valores no gráfico
+                    dados.labels.shift(); // apagar o primeiro
+                    dados.labels.push(novoRegistro[0].momento_grafico); // incluir um novo momento
+
+                    dados.datasets[0].data.shift();  // apagar o primeiro de temperatura
+                    dados.datasets[0].data.push(novoRegistro[0].usoMemoria); // incluir uma nova medida de temperatura
+
+                    window.grafico_linha3.update();
+
+                    // Altere aqui o valor em ms se quiser que o gráfico atualize mais rápido ou mais devagar
+                    proximaAtualizacao = setTimeout(() => atualizarGrafico2(idCaminhao, dados), 3000);
+                });
+            } else {
+                console.error('Nenhum dado encontrado ou erro na API');
+                // Altere aqui o valor em ms se quiser que o gráfico atualize mais rápido ou mais devagar
+                proximaAtualizacao = setTimeout(() => atualizarGrafico2(idCaminhao, dados), 3000);
+            }
+        })
+            .catch(function (error) {
+                console.error(`Erro na obtenção dos dados p/ gráfico: ${error.message}`);
+            });
+
+    }
+
+
+    function mostrarBom() {
+        estados.style.display = 'block';
+        p_estados.innerHTML = "Consumo cpu < 60% e Consumo de Ram < 60%"
+    }
+    function mostrarAtencao() {
+        estados.style.display = 'block';
+        p_estados.innerHTML = "Consumo cpu entre 61% e 70% Consumo de Ram entre 50% e 70%"
+    }
+    function mostrarRuim() {
+        estados.style.display = 'block';
+        p_estados.innerHTML = "Consumo de cpu e/ou ram entre maior que 60%"
+    }
+    function mostrarInativo() {
+        estados.style.display = 'block';
+        p_estados.innerHTML = "Maquina desativada"
+    }
+    function sumirDiv() {
+        estados.style.display = 'none';
+    }
+
+</script>
